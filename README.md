@@ -1,5 +1,9 @@
 # PES 大师联赛 AI 主教练（Skill）
 
+[![GitHub stars](https://img.shields.io/github/stars/jixingyuan001219-arch/pes-master-league-tactician?style=flat-square&label=Stars)](https://github.com/jixingyuan001219-arch/pes-master-league-tactician/stargazers)
+[![License: MIT](https://img.shields.io/github/license/jixingyuan001219-arch/pes-master-league-tactician?style=flat-square)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/jixingyuan001219-arch/pes-master-league-tactician?style=flat-square)](https://github.com/jixingyuan001219-arch/pes-master-league-tactician/releases)
+
 给你的**实况足球大师联赛**配一个 AI 主教练：读你的存档和球员数据，帮你**排阵容、定打法、练小将**，最后生成一张网页战术板——**每场赛前打开，照着摆就行**。
 
 > 支持 PES 2021 / eFootball（实况足球），主打单机大师联赛模式。
