@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>巴萨作战看板 · 2056</title>
+<!--
+  ============================================================
+  战术看板模板 · PES 大师联赛战术总监 Skill
+  本文件是完整可用的示例（数据为巴萨 2056 赛季大师联赛存档）。
+  生成新看板时：保留全部结构，只替换数据——
+  1. <script> 里的 PITCH 数组（A / B / C / D / A4231 / A352 六套阵型）
+     球员格式：{n:名字, s:关键数据, c:位置色(gk/df/mf/fw), x:横向%, y:纵向%, yng:1=练级小将}
+     ⚠️ y 是球场纵向坐标；练级标记必须用 yng，勿用 y（曾因重名导致球员挤在球场顶部）
+  2. 「40人说明」页签的表格行（球员/年龄/位置/层级/亮点/使用说明/换人说明）
+  3. 总览页签：赛季目标、四阶段、A/B/C/D 使用场景、转会清理、练级优先级
+  4. 底部铁律栏
+  坐标参考：GK(50,90)；四后卫 x=82/63/37/18、y=72-74；三中场 y=46-55；
+  三前锋 y=13-20；4-2-3-1 双后腰 x=38/62、y=56，前腰(50,38)；
+  3-5-2 三中卫 x=50/68/32、y=76-80，翼卫 x=88/12、y=62，双前锋 x=60/40、y=16
+  ============================================================
+-->
+<style>
+  :root{--bg:#0b1220;--panel:#111a2c;--line:#1f2b40;--text:#e5e7eb;--dim:#94a3b8;
+    --gk:#f59e0b;--df:#3b82f6;--mf:#22c55e;--fw:#ef4444}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;padding:24px 24px 90px;line-height:1.5}
+  h1{font-size:26px;margin-bottom:4px}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:16px}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+  .tab{color:var(--dim);border:1px solid var(--line);background:var(--panel);padding:9px 16px;border-radius:10px;font-size:15px;cursor:pointer;font-weight:600}
+  .tab:hover{color:#fff;border-color:#475569}
+  .tab.on{color:#0b1220;background:#e5e7eb;font-weight:800}
+  .panel{display:none}
+  .panel.show{display:block}
+  .head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .head h2{font-size:20px}
+  .oneline{background:#1e2a44;border:1px solid var(--line);border-radius:12px;padding:8px 14px;font-size:14px;color:#e0e7ff;margin-bottom:12px}
+  .oneline b{color:#fff}
+  /* 子页签 */
+  .subtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+  .subtab{color:var(--dim);border:1px solid var(--line);background:var(--panel);padding:6px 13px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600}
+  .subtab:hover{color:#fff;border-color:#475569}
+  .subtab.on{color:#0b1220;background:#e5e7eb;font-weight:800}
+  /* 层级队区块 */
+  .tier{display:none;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .tier.show{display:block}
+  .tierhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .tbadge{font-size:16px;font-weight:900;color:#0b1220;padding:3px 12px;border-radius:8px}
+  .tbadge.ta{background:#f97316}.tbadge.tb{background:#60a5fa}.tbadge.tc{background:#a78bfa}.tbadge.td{background:#94a3b8}
+  .tscene{font-size:14px;font-weight:700}
+  .tscene small{color:var(--dim);font-weight:400;margin-left:6px}
+  .row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+  .pitchwrap{flex:1 1 300px;min-width:270px;max-width:330px}
+  .info{flex:1 1 280px;min-width:260px;display:flex;flex-direction:column;gap:8px}
+  .pitch{position:relative;width:100%;aspect-ratio:68/105;background:linear-gradient(180deg,#1a7a3a,#14632e);border:2px solid #e5e7eb;border-radius:12px;overflow:hidden}
+  .line{position:absolute;background:rgba(255,255,255,.5)}
+  .half{left:0;right:0;top:50%;height:2px}
+  .circle{left:50%;top:50%;width:20%;aspect-ratio:1;transform:translate(-50%,-50%);border:2px solid rgba(255,255,255,.5);border-radius:50%}
+  .box{position:absolute;border:2px solid rgba(255,255,255,.5);width:32%;height:16%;left:50%;transform:translateX(-50%)}
+  .box.top{top:0}.box.bot{bottom:0}
+  .p{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:1px;width:76px}
+  .p .name{font-size:12px;font-weight:700;white-space:nowrap}
+  .p .stat{font-size:13px;font-weight:900;padding:0 7px;border-radius:14px;color:#0b1220;white-space:nowrap}
+  .p.gk .stat{background:var(--gk)}.p.df .stat{background:var(--df)}.p.mf .stat{background:var(--mf)}.p.fw .stat{background:var(--fw)}
+  .p.youth .name{color:#c4b5fd}
+  .p.youth .stat{background:#a78bfa}
+  .block{background:#0b1220;border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+  .block h3{font-size:12px;color:var(--dim);margin-bottom:4px}
+  .block p{font-size:13px;line-height:1.7}
+  .block b{color:#fff}
+  .block .xi{line-height:1.8}
+  /* 总览 */
+  .phases{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:14px}
+  .ph{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .ph .m{font-weight:900;font-size:15px}
+  .ph .d{font-size:12px;color:var(--dim);margin-top:4px}
+  .ph.p1 .m{color:#22c55e}.ph.p2 .m{color:#3b82f6}.ph.p3 .m{color:#f97316}.ph.p4 .m{color:#eab308}
+  .lvls{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:14px}
+  .lvl{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .lvl .t{font-weight:900;margin-bottom:4px}
+  .lvl .u{font-size:12px;color:var(--dim);margin-bottom:4px}
+  .lvl .s{font-size:13px}
+  .twocol{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+  /* 变阵 */
+  .trig{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px}
+  .trg{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .trg .ico{font-size:20px}
+  .trg .t{font-weight:800;margin:4px 0 2px;font-size:14px}
+  .trg .d{font-size:12px;color:var(--dim)}
+  /* 40人表 */
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:12px;margin-bottom:14px}
+  th,td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#0b1220;color:var(--dim);font-weight:600;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  .lvlpill{display:inline-block;font-size:10px;font-weight:800;padding:1px 7px;border-radius:5px;color:#0b1220;white-space:nowrap}
+  .lp-a{background:#f97316}.lp-b{background:#60a5fa}.lp-c{background:#a78bfa}.lp-d{background:#94a3b8}.lp-x{background:#fca5a5}
+  .pospill{display:inline-block;font-size:10px;font-weight:800;padding:1px 5px;border-radius:4px;color:#0b1220;white-space:nowrap}
+  .pp-gk{background:var(--gk)}.pp-df{background:var(--df)}.pp-mf{background:var(--mf)}.pp-fw{background:var(--fw)}
+  /* 铁律 */
+  .rules{position:fixed;left:0;right:0;bottom:0;background:#1a0f0f;border-top:1px solid #7f1d1d;display:flex;gap:18px;flex-wrap:wrap;justify-content:center;padding:10px 16px;font-size:14px;z-index:10}
+  .rules b{color:#fca5a5}
+</style>
+</head>
+<body>
+
+<h1>⚽ 巴萨作战看板 · 2056 赛季</h1>
+<div class="sub">今天踢什么 → 点页签 → 看对手 → 点子页签选队 → 照抄（紫名=练级小将）</div>
+
+<div class="tabs">
+  <button class="tab on" onclick="show('overview',this)">📊 总览</button>
+  <button class="tab" onclick="show('league',this)">🏆 联赛</button>
+  <button class="tab" onclick="show('ucl',this)">🌟 欧冠</button>
+  <button class="tab" onclick="show('copa',this)">🏅 国王杯</button>
+  <button class="tab" onclick="show('roster',this)">👥 40人说明</button>
+  <button class="tab" onclick="show('shape',this)">🔄 变阵</button>
+</div>
+
+<!-- ============ 总览 ============ -->
+<div id="overview" class="panel show">
+  <div class="head"><h2>📊 赛季总安排</h2></div>
+  <div class="oneline">目标：<b>西甲争冠（保前二）· 欧冠至少8强 · 国王杯争冠</b>｜冬窗：卖凯帕/博格巴/博尔哈 → 买<b>即战力LB + 顶级GK</b></div>
+  <div class="phases">
+    <div class="ph p1"><div class="m">🟢 开局 9-11月</div><div class="d">欧冠小组抢出线；国王杯练级</div></div>
+    <div class="ph p2"><div class="m">🔵 冬季 12-2月</div><div class="d">冬窗卖3买2（LB+GK）；欧冠16强</div></div>
+    <div class="ph p3"><div class="m">🟠 冲刺 3-4月</div><div class="d">三线全主力；欧冠8强/4强</div></div>
+    <div class="ph p4"><div class="m">🟡 收官 5月</div><div class="d">联赛末轮+欧冠决赛，不留力</div></div>
+  </div>
+  <div class="lvls">
+    <div class="lvl"><div class="t">🟠 A队 · 主力</div><div class="u">联赛前6 / 欧冠淘汰赛 / 国王杯半决赛决赛</div><div class="s">高位压迫+速度反击：断球就直塞打身后</div></div>
+    <div class="lvl"><div class="t">🔵 B队 · 轮换</div><div class="u">联赛后10 / 欧冠出线末轮 / 国王杯8强起</div><div class="s">控球推进+边中结合：卡列洪冲边，卡瓦尼抢点</div></div>
+    <div class="lvl"><div class="t">🟣 C队 · 练级混编</div><div class="u">联赛锁胜局后 / 国王杯对西甲队</div><div class="s">练级为主：梅西持球，德布劳内输送，中位拦截</div></div>
+    <div class="lvl"><div class="t">⚪ D队 · 全练级</div><div class="u">国王杯对鱼腩 / 无关痛痒比赛</div><div class="s">输赢看淡：小将自由发挥，老带新保底</div></div>
+  </div>
+  <div class="twocol">
+    <div class="block"><h3>🌱 练级优先级</h3>
+      <p class="xi">🥇 <b>范戴克</b>(17) → 赛季末接班佩佩｜🥇 <b>梅西</b>(16) → 下季进轮换<br>
+      🥈 <b>德布劳内</b>(18) → 接班伊涅斯塔｜🥈 <b>佩德里</b>(18) 杯赛<br>
+      🥉 <b>马塔/萨拉维亚/维托洛/劳尔加西亚/科拉罗夫</b> 国王杯练级<br>
+      ⛔ 练级球员<b>一个都别卖</b>（潜力满级）</p>
+    </div>
+    <div class="block"><h3>💸 转会与清理</h3>
+      <p class="xi">🔴 冬窗卖：<b>凯帕 · 博格巴 · 博尔哈</b>（可选：阿卜杜勒努尔）<br>
+      🟢 冬窗买：<b>即战力LB（最优先）+ 顶级GK</b><br>
+      🔵 下季夏窗：卖加布里埃尔（范戴克/伊尼戈成熟后）<br>
+      ⚠️ 最大风险：<b>左后卫只有马塞洛能打</b>，冬窗不补，一伤就崩</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 联赛 ============ -->
+<div id="league" class="panel">
+  <div class="head"><h2>🏆 联赛（西甲）</h2></div>
+  <div class="oneline">看对手排位：<b>前6 → A队</b>｜<b>后10 → B队</b>｜<b>已锁定胜局60'后 → C队练级</b></div>
+  <div class="subtabs">
+    <button class="subtab on" onclick="showTier('league','A',this)">🟠 A队 · 前6强队</button>
+    <button class="subtab" onclick="showTier('league','B',this)">🔵 B队 · 后10弱队</button>
+    <button class="subtab" onclick="showTier('league','C',this)">🟣 C队 · 锁胜局练级</button>
+  </div>
+
+  <div class="tier show" id="league-A">
+    <div class="tierhead"><span class="tbadge ta">A队</span><span class="tscene">对手=前6强队<small>高位压迫+速度反击</small></span></div>
+    <div class="row">
+      <div class="pitchwrap"><div class="pitch" data-team="A"></div></div>
+      <div class="info">
+        <div class="block"><h3>⚔️ 打法</h3><p class="xi">进攻：断球→伊涅斯塔/布斯克茨出球→三叉戟速度打身后；迪马利亚右路传中+奥巴梅扬左路插身后<br>防守：高位逼抢（中卫速91敢压上），维达尔就地反抢<br>转换：抢断后第一下直塞，别倒脚</p></div>
+        <div class="block"><h3>替补席7人</h3><p class="xi">布冯 · 阿兹皮利奎塔 · 佩佩 · 莱瓦 · 鲁尼 · 卡瓦尼 · <b>洛巴托</b></p></div>
+        <div class="block"><h3>🔄 换人</h3><p class="xi">60' <b>卡瓦尼</b>替阿圭罗 → 65' <b>洛巴托</b>替迪马利亚 → 70' <b>鲁尼</b>(要进球)/<b>莱瓦</b>(要守)替维达尔</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tier" id="league-B">
+    <div class="tierhead"><span class="tbadge tb">B队</span><span class="tscene">对手=后10弱队<small>控球推进+边中结合，主力休息</small></span></div>
+    <div class="row">
+      <div class="pitchwrap"><div class="pitch" data-team="B"></div></div>
+      <div class="info">
+        <div class="block"><h3>⚔️ 打法</h3><p class="xi">进攻：蒂亚戈/鲁尼阵地组织，伊尼戈(高传99)后场长传直接发动，卡列洪(速99)右路爆点，卡瓦尼抢点，齐耶赫内切传中<br>防守：中位防线别压太高（佩佩速82）<br>转换：断球找卡列洪/卡瓦尼打身后</p></div>
+        <div class="block"><h3>替补席7人</h3><p class="xi">德赫亚 · 基耶利尼 · 纳瓦斯 · 布斯克茨 · <b>范戴克</b> · <b>梅西</b> · 洛巴托</p></div>
+        <div class="block"><h3>🔄 换人</h3><p class="xi">60' <b>洛巴托</b>替卡瓦尼 → 65' <b>梅西</b>替卡列洪 → 70' <b>阿朗吉斯</b>替鲁尼（领先后范戴克替佩佩练级）</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tier" id="league-C">
+    <div class="tierhead"><span class="tbadge tc">C队</span><span class="tscene">已锁定胜局60'后 / 无欲无求场次<small>练级混编，别丢人即可</small></span></div>
+    <div class="row">
+      <div class="pitchwrap"><div class="pitch" data-team="C"></div></div>
+      <div class="info">
+        <div class="block"><h3>⚔️ 打法</h3><p class="xi">进攻：梅西(盘91)右路持球，德布劳内/佩德里输送，马塔抢点<br>防守：中位拦截别高位逼抢（练级防守差），阿朗吉斯+加布里埃尔兜底<br>转换：长传找萨拉维亚/马塔，简化战术</p></div>
+        <div class="block"><h3>替补席7人</h3><p class="xi">德赫亚 · 阿兹皮利奎塔 · 佩佩 · 维纳尔杜姆 · 阿卜杜勒努尔 · <b>维托洛</b> · <b>劳尔加西亚</b></p></div>
+        <div class="block"><h3>🔄 换人</h3><p class="xi">60'后陆续上<b>维托洛/劳尔加西亚/维纳尔杜姆/阿卜杜勒努尔</b>，给足练级时间（科拉罗夫从B队借调打左后卫）</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 欧冠 ============ -->
+<div id="ucl" class="panel">
+  <div class="head"><h2>🌟 欧冠</h2></div>
+  <div class="oneline"><b>淘汰赛两回合都全主力不轮换</b>｜小组赛提前出线后末轮轮休｜客场稳守反击别乱压上</div>
+  <div class="subtabs">
+    <button class="subtab on" onclick="showTier('ucl','A',this)">🟠 A队 · 淘汰赛</button>
+    <button class="subtab" onclick="showTier('ucl','B',this)">🔵 B队 · 出线末轮</button>
+    <button class="subtab" onclick="showTier('ucl','C',this)">🟣 C队 · 大比分领先</button>
+  </div>
+
+  <div class="tier show" id="ucl-A">
+    <div class="tierhead"><span class="tbadge ta">A队</span><span class="tscene">淘汰赛 / 小组赛争出线<small>一场不松</small></span></div>
+    <div class="row">
+      <div class="pitchwrap"><div class="pitch" data-team="A"></div></div>
+      <div class="info">
+        <div class="block"><h3>⚔️ 打法</h3><p class="xi">进攻：断球→伊涅斯塔/布斯克茨出球→三叉戟速度打身后；迪马利亚右路传中+奥巴梅扬左路插身后<br>防守：高位逼抢，维达尔就地反抢<br>转换：抢断后第一下直塞，别倒脚</p></div>
+        <div class="block"><h3>替补席7人</h3><p class="xi">布冯 · 阿兹皮利奎塔 · 佩佩 · 莱瓦 · 鲁尼 · 卡瓦尼 · <b>洛巴托</b></p></div>
+        <div class="block"><h3>🔄 换人</h3><p class="xi">60' <b>卡瓦尼</b> → 65' <b>洛巴托</b> → 70' <b>莱瓦</b>(锁胜局)/<b>鲁尼</b>(要进球)</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tier" id="ucl-B">
+    <div class="tierhead"><span class="tbadge tb">B队</span><span class="tscene">已出线的小组赛末轮<small>主力轮休</small></span></div>
+    <div class="row">
+      <div class="pitchwrap"><div class="pitch" data-team="B"></div></div>
+      <div class="info">
+        <div class="block"><h3>⚔️ 打法</h3><p class="xi">进攻：蒂亚戈/鲁尼阵地组织，伊尼戈后场长传发动，卡列洪(速99)右路爆点，卡瓦尼抢点，齐耶赫内切传中<br>防守：中位防线别压太高（佩佩速82）<br>转换：断球找卡列洪/卡瓦尼打身后</p></div>
+        <div class="block"><h3>替补席7人</h3><p class="xi">德赫亚 · 基耶利尼 · 纳瓦斯 · 布斯克茨 · <b>范戴克</b> · <b>梅西</b> · 洛巴托</p></div>
+        <div class="block"><h3>🔄 换人</h3><p class="xi">60' <b>洛巴托</b> → 65' <b>梅西</b> → 70' <b>阿朗吉斯</b>（领先后范戴克练级）</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tier" id="ucl-C">
+    <div class="tierhead"><span class="tbadge tc">C队</span><span class="tscene">大比分领先60'后<small>换小将上来刷经验</small></span></div>
+    <div class="row">
+      <div class="pitchwrap"><div class="pitch" data-team="C"></div></div>
+      <div class="info">
+        <div class="block"><h3>⚔️ 打法</h3><p class="xi">进攻：梅西右路持球，德布劳内/佩德里输送，马塔抢点<br>防守：中位拦截，阿朗吉斯+加布里埃尔兜底<br>转换：长传找萨拉维亚/马塔</p></div>
+        <div class="block"><h3>替补席7人</h3><p class="xi">德赫亚 · 阿兹皮利奎塔 · 佩佩 · 维纳尔杜姆 · 阿卜杜勒努尔 · <b>维托洛</b> · <b>劳尔加西亚</b></p></div>
+        <div class="block"><h3>🔄 换人</h3><p class="xi">60'后陆续上<b>维托洛/劳尔加西亚/维纳尔杜姆</b>练级</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 国王杯 ============ -->
+<div id="copa" class="panel">
+  <div class="head"><h2>🏅 国王杯</h2></div>
+  <div class="oneline">按轮次爬梯子：<b>前两轮(鱼腩)→D队全练级</b>｜<b>第三轮起(西甲队)→C队</b>｜<b>8强起→B队</b>｜<b>半决赛/决赛→A队</b></div>
+  <div class="subtabs">
+    <button class="subtab on" onclick="showTier('copa','D',this)">⚪ D队 · 鱼腩练级</button>
+    <button class="subtab" onclick="showTier('copa','C',this)">🟣 C队 · 对西甲队</button>
+    <button class="subtab" onclick="showTier('copa','B',this)">🔵 B队 · 8强起</button>
+    <button class="subtab" onclick="showTier('copa','A',this)">🟠 A队 · 半决赛/决赛</button>
+  </div>
+
+  <div class="tier show" id="copa-D">
+    <div class="tierhead"><span class="tbadge td">D队</span><span class="tscene">前两轮 · 对低级别鱼腩<small>全练级，输赢看淡</small></span></div>
+    <div class="row">
+      <div class="pitchwrap"><div class="pitch" data-team="D"></div></div>
+      <div class="info">
+        <div class="block"><h3>⚔️ 打法</h3><p class="xi">进攻：梅西/德布劳内自由发挥练技术，马塔抢点<br>防守：中低位，加布里埃尔带范戴克老带新<br>转换：长传反击找马塔/萨拉维亚；目标别丢人，练级第一</p></div>
+        <div class="block"><h3>替补席7人</h3><p class="xi">布冯 · 阿兹皮利奎塔 · 阿朗吉斯 · 博尔哈 · <b>维托洛</b> · 阿卜杜勒努尔 · 维纳尔杜姆</p></div>
+        <div class="block"><h3>🔄 换人</h3><p class="xi"><b>维托洛必上</b>；其余练级轮着上；落后太多才换老将稳场面</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tier" id="copa-C">
+    <div class="tierhead"><span class="tbadge tc">C队</span><span class="tscene">第三轮起 · 对西甲球队<small>练级混编</small></span></div>
+    <div class="row">
+      <div class="pitchwrap"><div class="pitch" data-team="C"></div></div>
+      <div class="info">
+        <div class="block"><h3>⚔️ 打法</h3><p class="xi">进攻：梅西右路持球，德布劳内/佩德里输送，马塔抢点<br>防守：中位拦截，阿朗吉斯+加布里埃尔兜底<br>转换：长传找萨拉维亚/马塔</p></div>
+        <div class="block"><h3>替补席7人</h3><p class="xi">德赫亚 · 阿兹皮利奎塔 · 佩佩 · 维纳尔杜姆 · 阿卜杜勒努尔 · <b>维托洛</b> · <b>劳尔加西亚</b></p></div>
+        <div class="block"><h3>🔄 换人</h3><p class="xi">60'后陆续上<b>维托洛/劳尔加西亚/维纳尔杜姆</b>给足练级时间</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tier" id="copa-B">
+    <div class="tierhead"><span class="tbadge tb">B队</span><span class="tscene">8强起<small>认真了</small></span></div>
+    <div class="row">
+      <div class="pitchwrap"><div class="pitch" data-team="B"></div></div>
+      <div class="info">
+        <div class="block"><h3>⚔️ 打法</h3><p class="xi">进攻：蒂亚戈/鲁尼阵地组织，伊尼戈后场长传发动，卡列洪右路爆点，卡瓦尼抢点，齐耶赫内切传中<br>防守：中位防线别压太高<br>转换：断球找卡列洪/卡瓦尼</p></div>
+        <div class="block"><h3>替补席7人</h3><p class="xi">德赫亚 · 基耶利尼 · 纳瓦斯 · 布斯克茨 · <b>范戴克</b> · <b>梅西</b> · 洛巴托</p></div>
+        <div class="block"><h3>🔄 换人</h3><p class="xi">60' <b>洛巴托</b> → 65' <b>梅西</b> → 70' <b>阿朗吉斯</b></p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tier" id="copa-A">
+    <div class="tierhead"><span class="tbadge ta">A队</span><span class="tscene">半决赛 / 决赛<small>争冠，全主力</small></span></div>
+    <div class="row">
+      <div class="pitchwrap"><div class="pitch" data-team="A"></div></div>
+      <div class="info">
+        <div class="block"><h3>⚔️ 打法</h3><p class="xi">进攻：断球→出球→三叉戟速度打身后；迪马利亚右路传中+奥巴梅扬左路插身后<br>防守：高位逼抢，维达尔就地反抢<br>转换：抢断后第一下直塞</p></div>
+        <div class="block"><h3>替补席7人</h3><p class="xi">布冯 · 阿兹皮利奎塔 · 佩佩 · 莱瓦 · 鲁尼 · 卡瓦尼 · <b>洛巴托</b></p></div>
+        <div class="block"><h3>🔄 换人</h3><p class="xi">60' <b>卡瓦尼</b> → 65' <b>洛巴托</b> → 70' <b>鲁尼</b>(进)/<b>莱瓦</b>(守)</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 40人说明 ============ -->
+<div id="roster" class="panel">
+  <div class="head"><h2>👥 40 人全员使用说明</h2></div>
+  <div class="oneline">层级：🟠A主力 ｜ 🔵B轮换 ｜ 🟣C混编 ｜ ⚪D练级 ｜ 🔴特殊/可卖。换人说明即"什么时候换他上/下"</div>
+  <table>
+    <tr><th>球员</th><th>年龄</th><th>位置</th><th>层级</th><th>亮点</th><th>使用说明</th><th>换人说明</th></tr>
+    <tr><td>德赫亚</td><td>22</td><td><span class="pospill pp-gk">GK</span></td><td><span class="lvlpill lp-a">A</span></td><td>跳86</td><td>首发门将，联赛/欧冠/决赛主力，22岁顺带练级</td><td>一般不动；大比分领先可换布冯</td></tr>
+    <tr><td>纳瓦斯</td><td>23</td><td><span class="pospill pp-df">RB</span></td><td><span class="lvlpill lp-a">A</span></td><td>速99</td><td>右路套上爆点，回追靠速度兜底</td><td>大比分领先换阿兹皮利奎塔</td></tr>
+    <tr><td>基耶利尼</td><td>25</td><td><span class="pospill pp-df">CB</span></td><td><span class="lvlpill lp-a">A</span></td><td>防98抢99</td><td>防线指挥官，上抢+争顶，盯对方高中锋</td><td>领先后60'换范戴克练级</td></tr>
+    <tr><td>库利巴利</td><td>23</td><td><span class="pospill pp-df">CB</span></td><td><span class="lvlpill lp-a">A</span></td><td>防95速91</td><td>回追型，专防身后球</td><td>领先后换佩佩/范戴克</td></tr>
+    <tr><td>马塞洛</td><td>25</td><td><span class="pospill pp-df">LB</span></td><td><span class="lvlpill lp-a">A</span></td><td>控99盘92</td><td>左路爆点，内切或下底</td><td>弱旅场/杯赛换科拉罗夫</td></tr>
+    <tr><td>布斯克茨</td><td>22</td><td><span class="pospill pp-mf">DMF</span></td><td><span class="lvlpill lp-a">A</span></td><td>防94出球</td><td>单后腰屏障+出球，高传96大范围转移</td><td>70'换莱瓦锁胜局</td></tr>
+    <tr><td>伊涅斯塔</td><td>21</td><td><span class="pospill pp-mf">CM</span></td><td><span class="lvlpill lp-a">A</span></td><td>控99盘95</td><td>节奏核心，最后一传，唯一不被换下</td><td>大比分才换德布劳内</td></tr>
+    <tr><td>维达尔</td><td>25</td><td><span class="pospill pp-mf">CM</span></td><td><span class="lvlpill lp-a">A</span></td><td>抢98身99</td><td>绞肉机，抢断后第一下直塞</td><td>70'换鲁尼(进)/莱瓦(守)</td></tr>
+    <tr><td>迪马利亚</td><td>24</td><td><span class="pospill pp-fw">RW</span></td><td><span class="lvlpill lp-a">A</span></td><td>传中95速97</td><td>右路传中+内切，别让他回撤</td><td>65'换洛巴托/卡列洪</td></tr>
+    <tr><td>阿圭罗</td><td>22</td><td><span class="pospill pp-fw">CF</span></td><td><span class="lvlpill lp-a">A</span></td><td>射94加99</td><td>禁区抢点+转身爆射</td><td>60'换卡瓦尼</td></tr>
+    <tr><td>奥巴梅扬</td><td>21</td><td><span class="pospill pp-fw">LW</span></td><td><span class="lvlpill lp-a">A</span></td><td>速98射93</td><td>唯一不许回防，留接身后球单刀</td><td>65'换齐耶赫(阵地)/卡列洪(冲)</td></tr>
+    <tr><td>布冯</td><td>28</td><td><span class="pospill pp-gk">GK</span></td><td><span class="lvlpill lp-b">B</span></td><td>身98</td><td>B队/杯赛门将，硬仗可替德赫亚首发</td><td>一般不换</td></tr>
+    <tr><td>阿兹皮利奎塔</td><td>21</td><td><span class="pospill pp-df">RB</span></td><td><span class="lvlpill lp-b">B</span></td><td>抢97</td><td>防守型右后卫，可客串中卫</td><td>需要防守时换纳瓦斯</td></tr>
+    <tr><td>佩佩</td><td>30</td><td><span class="pospill pp-df">CB</span></td><td><span class="lvlpill lp-b">B</span></td><td>防92身98</td><td>第三中卫，3-5-2变阵首发</td><td>范戴克练级时换下</td></tr>
+    <tr><td>伊尼戈</td><td>21</td><td><span class="pospill pp-df">CB</span></td><td><span class="lvlpill lp-b">B</span></td><td>高传99</td><td>出球中卫，后场长传直接发动反击</td><td>练级中，多给时间接班佩佩</td></tr>
+    <tr><td>科拉罗夫</td><td>19</td><td><span class="pospill pp-df">LB</span></td><td><span class="lvlpill lp-b">B</span></td><td>脚93</td><td>唯一LB替补，远射+长传，B/C/D队三栖</td><td>弱旅场替马塞洛练级</td></tr>
+    <tr><td>莱瓦</td><td>28</td><td><span class="pospill pp-mf">DMF</span></td><td><span class="lvlpill lp-b">B</span></td><td>防90抢87</td><td>布斯克茨轮换，双后腰搭档</td><td>要守时70'换上</td></tr>
+    <tr><td>蒂亚戈</td><td>23</td><td><span class="pospill pp-mf">CM</span></td><td><span class="lvlpill lp-b">B</span></td><td>紧95地96</td><td>控球局组织节拍器</td><td>高压局禁用（身59一碰就丢）</td></tr>
+    <tr><td>鲁尼</td><td>30</td><td><span class="pospill pp-mf">AMF</span></td><td><span class="lvlpill lp-b">B</span></td><td>控98射95</td><td>前腰，禁区前沿远射+分球</td><td>要进球时70'换上</td></tr>
+    <tr><td>卡列洪</td><td>28</td><td><span class="pospill pp-fw">RW</span></td><td><span class="lvlpill lp-b">B</span></td><td>速99体95</td><td>B队速度点，冲疲惫边卫</td><td>65'后换上</td></tr>
+    <tr><td>卡瓦尼</td><td>23</td><td><span class="pospill pp-fw">CF</span></td><td><span class="lvlpill lp-b">B</span></td><td>攻97速99头88</td><td>超级替补，打身后/高球</td><td>60'后换上</td></tr>
+    <tr><td>齐耶赫</td><td>23</td><td><span class="pospill pp-fw">LW</span></td><td><span class="lvlpill lp-b">B</span></td><td>紧97高91</td><td>技术流左边锋，传中+内切</td><td>阵地战替奥巴梅扬</td></tr>
+    <tr><td>凯帕</td><td>20</td><td><span class="pospill pp-gk">GK</span></td><td><span class="lvlpill lp-c">C</span></td><td>全项弱</td><td>第三门将，练级场用</td><td>冬窗卖</td></tr>
+    <tr><td>卡利朱里</td><td>25</td><td><span class="pospill pp-mf">RMF</span></td><td><span class="lvlpill lp-c">C</span></td><td>体98加92</td><td>边路万金油，RMF/LMF/RB都能打</td><td>C/D队补位</td></tr>
+    <tr><td>加布里埃尔</td><td>28</td><td><span class="pospill pp-df">CB</span></td><td><span class="lvlpill lp-c">C</span></td><td>防89跳92</td><td>第四中卫，C/D队带范戴克</td><td>下季卖（范戴克成熟后）</td></tr>
+    <tr><td>范戴克</td><td>17</td><td><span class="pospill pp-df">CB</span></td><td><span class="lvlpill lp-c">C练</span></td><td>防81</td><td>练级第一优先，1赛季接班佩佩</td><td>领先后60'换基耶利尼</td></tr>
+    <tr><td>阿朗吉斯</td><td>26</td><td><span class="pospill pp-mf">CM</span></td><td><span class="lvlpill lp-c">C</span></td><td>体99盘94防85</td><td>万能工兵，C队兜底</td><td>硬仗中场第8人</td></tr>
+    <tr><td>维纳尔杜姆</td><td>24</td><td><span class="pospill pp-mf">CM</span></td><td><span class="lvlpill lp-c">C</span></td><td>紧98跳95</td><td>前插B2B，替伊涅斯塔的进攻版</td><td>需要中场进球时上</td></tr>
+    <tr><td>阿卜杜勒努尔</td><td>25</td><td><span class="pospill pp-mf">AMF</span></td><td><span class="lvlpill lp-c">C</span></td><td>盘98紧94</td><td>盘带前腰，破密集防守</td><td>摆大巴时上；缺钱可卖</td></tr>
+    <tr><td>博格巴</td><td>23</td><td><span class="pospill pp-mf">CM</span></td><td><span class="lvlpill lp-x">卖</span></td><td>地91高93</td><td>身体流B2B，冬窗前偶尔用</td><td>冬窗卖</td></tr>
+    <tr><td>博尔哈</td><td>21</td><td><span class="pospill pp-mf">CM</span></td><td><span class="lvlpill lp-x">卖</span></td><td>控93盘88</td><td>控球中场，和蒂亚戈功能重复</td><td>冬窗卖</td></tr>
+    <tr><td>梅西</td><td>16</td><td><span class="pospill pp-fw">RW</span></td><td><span class="lvlpill lp-d">D练</span></td><td>盘91</td><td>练级第一优先，练速度/身体，2-3赛季回巅峰</td><td>下半场替迪马利亚；杯赛首发</td></tr>
+    <tr><td>德布劳内</td><td>18</td><td><span class="pospill pp-mf">AMF</span></td><td><span class="lvlpill lp-d">D练</span></td><td>传92</td><td>未来组织核心，练传球</td><td>杯赛替伊涅斯塔；下半季提时间</td></tr>
+    <tr><td>佩德里</td><td>18</td><td><span class="pospill pp-mf">CM</span></td><td><span class="lvlpill lp-d">D练</span></td><td>控80</td><td>控球型中场，别急着上强度</td><td>垃圾时间/杯赛</td></tr>
+    <tr><td>马塔</td><td>18</td><td><span class="pospill pp-fw">CF</span></td><td><span class="lvlpill lp-d">D练</span></td><td>射83</td><td>练射门的中锋</td><td>杯赛首发CF</td></tr>
+    <tr><td>萨拉维亚</td><td>18</td><td><span class="pospill pp-fw">RW</span></td><td><span class="lvlpill lp-d">D练</span></td><td>控90盘91</td><td>边锋练级</td><td>杯赛/垃圾时间</td></tr>
+    <tr><td>维托洛</td><td>18</td><td><span class="pospill pp-fw">RW</span></td><td><span class="lvlpill lp-d">D练</span></td><td>盘94</td><td>边锋练级，杯赛替补必上</td><td>杯赛60'后换上</td></tr>
+    <tr><td>劳尔加西亚</td><td>18</td><td><span class="pospill pp-mf">AMF</span></td><td><span class="lvlpill lp-d">D练</span></td><td>速91加99</td><td>有速度的中场小将</td><td>杯赛/垃圾时间</td></tr>
+    <tr><td>洛巴托</td><td>29</td><td><span class="pospill pp-fw">SS</span></td><td><span class="lvlpill lp-x">替补</span></td><td>攻98盘97体68</td><td>空间型突破手，60'前或60'后上，超级替补第一人选</td><td><b>永远别打满90分钟</b></td></tr>
+    <tr><td>未找到</td><td>?</td><td><span class="pospill pp-mf">?</span></td><td><span class="lvlpill lp-x">?</span></td><td>?</td><td>ID 2147483648，疑似青训/重生球员，名字库未匹配</td><td>重新dump名字确认</td></tr>
+  </table>
+</div>
+
+<!-- ============ 变阵 ============ -->
+<div id="shape" class="panel">
+  <div class="head"><h2>🔄 变阵（比赛中切换）</h2></div>
+  <div class="oneline">默认 <b>4-3-3 反击</b>。对手摆大巴 → 切 4-2-3-1；领先要锁胜局 / 对手猛攻中路 → 切 3-5-2</div>
+  <div class="trig">
+    <div class="trg"><div class="ico">🏆</div><div class="t">强队/客场</div><div class="d">4-3-3 不动，稳守+反击</div></div>
+    <div class="trg"><div class="ico">🧱</div><div class="t">摆大巴</div><div class="d">切 4-2-3-1：洛巴托+鲁尼上</div></div>
+    <div class="trg"><div class="ico">🐢</div><div class="t">高慢后卫</div><div class="d">4-3-3 打身后：卡瓦尼当箭头</div></div>
+    <div class="trg"><div class="ico">⚔️</div><div class="t">对手猛攻中路</div><div class="d">切 3-5-2：佩佩上第三中卫</div></div>
+  </div>
+  <div class="row">
+    <div class="pitchwrap"><div class="pitch" data-team="A4231"></div>
+      <div class="block" style="margin-top:8px"><h3>4-2-3-1 · 破密集防守</h3><p>双后腰<b>布斯克茨+维达尔</b>锁中场；<b>鲁尼</b>(射95)前腰远射+分球；<b>洛巴托</b>(盘97)/迪马利亚拉边内切。落后或打不穿时用</p></div>
+    </div>
+    <div class="pitchwrap"><div class="pitch" data-team="A352"></div>
+      <div class="block" style="margin-top:8px"><h3>3-5-2 · 领先后锁胜局</h3><p><b>佩佩</b>(防92)上第三中卫锁中路；纳瓦斯/马塞洛退边翼卫；双前锋<b>阿圭罗+奥巴梅扬</b>留速度打反击。领先或对手强攻中路时用</p></div>
+    </div>
+    <div class="info">
+      <div class="block"><h3>换阵口诀</h3><p class="xi">落后/打不穿 → <b>4-2-3-1</b>（上洛巴托+鲁尼）<br>领先/被强攻 → <b>3-5-2</b>（上佩佩）<br>平分对攻 → 保持 <b>4-3-3</b> 别乱变</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- 底部铁律 -->
+<div class="rules">
+  <span>⚡ <b>铁律①</b> 洛巴托打不满90分钟（体力68），60-70'必换</span>
+  <span>⚡ <b>铁律②</b> 奥巴梅扬不许回防，留接身后球单刀</span>
+  <span>⚡ <b>铁律③</b> 维达尔抢断 = 进攻开始，第一下就直塞</span>
+</div>
+
+<script>
+const PITCH={
+A:[{n:'德赫亚',s:'跳86',c:'gk',x:50,y:90},{n:'纳瓦斯',s:'速99',c:'df',x:82,y:72},{n:'基耶利尼',s:'防98',c:'df',x:63,y:74},{n:'库利巴利',s:'防95',c:'df',x:37,y:74},{n:'马塞洛',s:'控99',c:'df',x:18,y:72},{n:'布斯克茨',s:'出球',c:'mf',x:50,y:55},{n:'伊涅斯塔',s:'控99',c:'mf',x:70,y:46},{n:'维达尔',s:'抢98',c:'mf',x:30,y:46},{n:'迪马利亚',s:'传中95',c:'fw',x:82,y:20},{n:'阿圭罗',s:'射94',c:'fw',x:50,y:13},{n:'奥巴梅扬',s:'速98',c:'fw',x:18,y:20}],
+B:[{n:'布冯',s:'身98',c:'gk',x:50,y:90},{n:'阿兹皮利奎塔',s:'抢97',c:'df',x:82,y:72},{n:'佩佩',s:'防92',c:'df',x:63,y:74},{n:'伊尼戈',s:'高传99',c:'df',x:37,y:74},{n:'科拉罗夫',s:'脚93',c:'df',x:18,y:72,yng:1},{n:'莱瓦',s:'防90',c:'mf',x:50,y:55},{n:'蒂亚戈',s:'紧95',c:'mf',x:70,y:46},{n:'鲁尼',s:'射95',c:'mf',x:30,y:46},{n:'卡列洪',s:'速99',c:'fw',x:82,y:20},{n:'卡瓦尼',s:'速99',c:'fw',x:50,y:13},{n:'齐耶赫',s:'紧97',c:'fw',x:18,y:20}],
+C:[{n:'凯帕',s:'跳79',c:'gk',x:50,y:90},{n:'卡利朱里',s:'体98',c:'df',x:82,y:72},{n:'加布里埃尔',s:'防89',c:'df',x:63,y:74},{n:'范戴克',s:'防81',c:'df',x:37,y:74,yng:1},{n:'科拉罗夫',s:'脚93',c:'df',x:18,y:72,yng:1},{n:'阿朗吉斯',s:'体99',c:'mf',x:50,y:55},{n:'德布劳内',s:'传92',c:'mf',x:70,y:46,yng:1},{n:'佩德里',s:'控80',c:'mf',x:30,y:46,yng:1},{n:'梅西',s:'盘91',c:'fw',x:82,y:20,yng:1},{n:'马塔',s:'射83',c:'fw',x:50,y:13,yng:1},{n:'萨拉维亚',s:'盘91',c:'fw',x:18,y:20,yng:1}],
+D:[{n:'凯帕',s:'跳79',c:'gk',x:50,y:90},{n:'卡利朱里',s:'体98',c:'df',x:82,y:72},{n:'加布里埃尔',s:'防89',c:'df',x:63,y:74},{n:'范戴克',s:'防81',c:'df',x:37,y:74,yng:1},{n:'科拉罗夫',s:'脚93',c:'df',x:18,y:72,yng:1},{n:'佩德里',s:'控80',c:'mf',x:50,y:55,yng:1},{n:'德布劳内',s:'传92',c:'mf',x:70,y:46,yng:1},{n:'劳尔加西亚',s:'加99',c:'mf',x:30,y:46,yng:1},{n:'梅西',s:'盘91',c:'fw',x:82,y:20,yng:1},{n:'马塔',s:'射83',c:'fw',x:50,y:13,yng:1},{n:'萨拉维亚',s:'盘91',c:'fw',x:18,y:20,yng:1}],
+A4231:[{n:'德赫亚',s:'跳86',c:'gk',x:50,y:90},{n:'纳瓦斯',s:'速99',c:'df',x:82,y:72},{n:'基耶利尼',s:'防98',c:'df',x:63,y:74},{n:'库利巴利',s:'防95',c:'df',x:37,y:74},{n:'马塞洛',s:'控99',c:'df',x:18,y:72},{n:'布斯克茨',s:'出球',c:'mf',x:38,y:56},{n:'维达尔',s:'抢98',c:'mf',x:62,y:56},{n:'鲁尼',s:'射95',c:'mf',x:50,y:38},{n:'迪马利亚',s:'传中95',c:'fw',x:82,y:20},{n:'阿圭罗',s:'射94',c:'fw',x:50,y:12},{n:'洛巴托',s:'盘97',c:'fw',x:18,y:20}],
+A352:[{n:'德赫亚',s:'跳86',c:'gk',x:50,y:90},{n:'佩佩',s:'防92',c:'df',x:50,y:76},{n:'基耶利尼',s:'防98',c:'df',x:68,y:80},{n:'库利巴利',s:'防95',c:'df',x:32,y:80},{n:'纳瓦斯',s:'速99',c:'mf',x:88,y:62},{n:'马塞洛',s:'控99',c:'mf',x:12,y:62},{n:'布斯克茨',s:'出球',c:'mf',x:62,y:52},{n:'维达尔',s:'抢98',c:'mf',x:38,y:52},{n:'伊涅斯塔',s:'控99',c:'mf',x:50,y:36},{n:'阿圭罗',s:'射94',c:'fw',x:60,y:16},{n:'奥巴梅扬',s:'速98',c:'fw',x:40,y:16}]
+};
+document.querySelectorAll('.pitch[data-team]').forEach(function(el){
+  var t=PITCH[el.dataset.team];
+  el.innerHTML='<div class="line half"></div><div class="circle"></div><div class="box top"></div><div class="box bot"></div>';
+  t.forEach(function(pl){
+    var d=document.createElement('div');
+    d.className='p '+pl.c+(pl.yng?' youth':'');
+    d.style.left=pl.x+'%';d.style.top=pl.y+'%';
+    d.innerHTML='<span class="name">'+pl.n+'</span><span class="stat">'+pl.s+'</span>';
+    el.appendChild(d);
+  });
+});
+function show(id,btn){
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('show')});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on')});
+  document.getElementById(id).classList.add('show');
+  btn.classList.add('on');
+}
+function showTier(comp,tier,btn){
+  document.querySelectorAll('#'+comp+' .tier').forEach(function(t){t.classList.remove('show')});
+  document.querySelectorAll('#'+comp+' .subtab').forEach(function(b){b.classList.remove('on')});
+  document.getElementById(comp+'-'+tier).classList.add('show');
+  btn.classList.add('on');
+}
+</script>
+
+</body>
+</html>
